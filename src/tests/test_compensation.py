@@ -67,3 +67,18 @@ def test_get_clause_still_returns_old_clause(tmp_path):
     assert old["found"] is True
     assert old["is_current"] is False
     assert [row["policy_id"] for row in current["policies"]] == ["POL-2026-11"]
+
+
+def test_workflow_stacking_max_not_sum():
+    """Bổ sung test nghiệp vụ bởi Người 1 (Trần Nguyễn Hà Lan).
+    Kiểm tra luật nghiệp vụ: Khi đơn vừa trễ hẹn vừa hỏng hàng, quote phải lấy MAX
+    chứ không được cộng dồn (shipping_fee 30.000 vs damage 150.000 -> lấy 150.000).
+    """
+    policies = _policies()
+    today = as_of()
+    res = quote(
+        _order(delay_days=5, shipping_fee_vnd=30000, damage_verified=True, paid_vnd=200000),
+        policies,
+        as_of=today,
+    )
+    assert res.amount_vnd == 150000, "Phải lấy max(30000, 150000) = 150000, không được cộng dồn thành 180000"
